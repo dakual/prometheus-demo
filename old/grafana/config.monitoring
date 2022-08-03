@@ -1,0 +1,7 @@
+## alertmanager.conf ##
+
+route:
+  receiver: 'slack'
+
+receivers:
+  - name: 'slack'

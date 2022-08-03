@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ["alertmanager:9093"]
+      
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+  - job_name: services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 'prometheus:9090'
+          - 'idonotexists:564'
+        labels:
+          sunucu: 'Web servers'

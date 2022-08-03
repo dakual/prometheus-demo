@@ -1,0 +1,58 @@
+groups:
+- name: DenemeRules1
+  rules:
+
+  # Alert for any instance that is unreachable for >5 minutes.
+  - alert: InstanceDown
+    expr: up == 0
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+  - alert: HostOutOfDiskSpace
+    expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host out of disk space (instance {{ $labels.instance }})
+      description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+- name: 'Count of CPU cores'
+  rules:
+  - record: node:cpu_core:count
+    expr: count by (instance) (sum by (instance, cpu) (node_cpu_seconds_total))
+    
+- name: 'Free Memory'
+  rules:
+  - record: node_memory_MemFree_percent22
+    expr: 100 - (100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
+
+- name: DenemeRules2
+  rules:
+  
+  - alert: HostHighCpuLoad
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host high CPU load (instance {{ $labels.instance }})
+      description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+- name: 'Critical System Load'
+  rules:
+  - alert: 'Node Has Critical System Load'
+    expr: sum by (instance) (node_load1) > node:cpu_core:count
+    for: 3m
+    labels:
+      environment: prod
+      severity: critical
+      owner: 'DevOps'
+    annotations:
+      summary: 'Hostname: {{ $labels.instance }}, Load1 avg: {{ $value }}, Interval: 3min'
+      description: 'System load average of the node {{ $labels.instance }} is {{ $value }}'
+
