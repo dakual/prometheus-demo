@@ -18,4 +18,8 @@ scrape_configs:
           - 'prometheus:9090'
           - 'idonotexists:564'
         labels:
-          sunucu: 'Web servers'
+          server: 'Web servers'
+      - targets: 
+          - 'node-exporter:9100'
+        labels:
+          server: 'Node exporter demo'
