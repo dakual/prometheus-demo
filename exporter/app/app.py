@@ -33,7 +33,7 @@ class AppMetrics:
       "current_requests": random.randint(20, 40),
       "pending_requests": random.randint(5, 15),
       "total_uptime": uptime.uptime(),
-      "health": "healthy"
+      "health": random.choice(["healthy","unhealthy"])
     }
 
     # Update Prometheus metrics with example values
