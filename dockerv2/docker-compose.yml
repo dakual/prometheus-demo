@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  traefik:
+    container_name: traefik
+    hostname: traefik
+    image: "traefik:v3.0"
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+    ports:
+      - "80:80"
+      - "1080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - monitoring
+
+  prometheus:
+    container_name: prometheus
+    hostname: prometheus
+    image: prom/prometheus:v2.41.0
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+    command:
+      - '--web.enable-lifecycle'
+      - '--web.config.file=web.yml'
+    volumes:
+      - type: volume
+        source: prometheus_data
+        target: /prometheus
+      - type: bind
+        source: ./prometheus/
+        target: /prometheus/
+    ports:
+      - 9090:9090
+    networks:
+      - monitoring
+
+  grafana:
+    container_name: grafana
+    hostname: grafana
+    image: grafana/grafana:9.3.2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - type: bind
+        source: ./grafana/provisioning/
+        target: /etc/grafana/provisioning/
+      - type: volume
+        source: grafana_data
+        target: /var/lib/grafana
+    ports:
+      - 3000:3000
+    networks:
+      - monitoring
+
+  alertmanager:
+    container_name: alertmanager
+    hostname: alertmanager
+    image: prom/alertmanager
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.localhost`)"
+      - "traefik.http.routers.alertmanager.entrypoints=web"
+    volumes:
+      - type: bind
+        source: ./alertmanager/alertmanager.conf
+        target: /etc/alertmanager/alertmanager.conf
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.conf'
+    ports:
+      - 9093:9093
+    networks:
+      - monitoring
+
+volumes:
+  prometheus_data:
+  grafana_data:
+networks:
+  monitoring:
